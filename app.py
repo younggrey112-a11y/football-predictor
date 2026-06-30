@@ -24,6 +24,13 @@ CURRENT_SEASON = 2026  # Updated for the active year
 # Supported Leagues Mapping
 LEAGUES = {
     "🏆 FIFA World Cup": 1,            # <-- Added the World Cup here!
+    "🌍 Africa Cup of Nations (AFCON)": 6,
+    "🏴󠁧󠁢󠁥󠁮󠁧󠁿 English Premier League": 39,
+    "🏴󠁧󠁢󠁥󠁮󠁧󠁿 England Championship": 40,        # <-- New!
+    "🇪🇺 UEFA Champions League": 2,
+    "🇪🇺 UEFA Europa League": 3,              # <-- New!
+    "🇪🇺 UEFA Conference League": 848,        # <-- New!
+    "🇨🇳 Chinese Super League": 169,     
     "🏴󠁧󠁢󠁥󠁮󠁧󠁿 English Premier League": 39,
     "🇪🇸 La Liga (Spain)": 140,
     "🇮🇹 Serie A (Italy)": 135,
