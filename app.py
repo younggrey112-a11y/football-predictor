@@ -19,27 +19,25 @@ HEADERS = {
     'x-rapidapi-key': API_KEY
 }
 
-CURRENT_SEASON = 2026  # Updated for the active year
+# Automatically calculates the current year dynamically
+CURRENT_SEASON = datetime.date.today().year 
 
 # Supported Leagues Mapping
 LEAGUES = {
-    "🏆 FIFA World Cup": 1,            # <-- Added the World Cup here!
     "🌍 Africa Cup of Nations (AFCON)": 6,
+    "🏆 FIFA World Cup": 1,
     "🏴󠁧󠁢󠁥󠁮󠁧󠁿 English Premier League": 39,
-    "🏴󠁧󠁢󠁥󠁮󠁧󠁿 England Championship": 40,        # <-- New!
+    "🏴󠁧󠁢󠁥󠁮󠁧󠁿 England Championship": 40,
     "🇪🇺 UEFA Champions League": 2,
-    "🇪🇺 UEFA Europa League": 3,              # <-- New!
-    "🇪🇺 UEFA Conference League": 848,        # <-- New!
-    "🇨🇳 Chinese Super League": 169,     
-    "🏴󠁧󠁢󠁥󠁮󠁧󠁿 English Premier League": 39,
+    "🇪🇺 UEFA Europa League": 3,
+    "🇪🇺 UEFA Conference League": 848,
+    "🇨🇳 Chinese Super League": 169,
     "🇪🇸 La Liga (Spain)": 140,
     "🇮🇹 Serie A (Italy)": 135,
     "🇩🇪 Bundesliga (Germany)": 78,
     "🇫🇷 Ligue 1 (France)": 61,
-    "🇪🇺 UEFA Champions League": 2,
     "🇺🇸 MLS (USA)": 253
 }
-
 # ============================================================
 # DATA FETCHING PIPELINES
 # ============================================================
@@ -89,9 +87,14 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
         end_str = (now + timedelta(days=1)).strftime('%Y-%m-%d')
 
     # API request
-    url = f"{API_URL}fixtures?league={league_id}&season={CURRENT_SEASON}&from={start_str[:10]}&to={end_str[:10]}"
+    url = f"{API_URL}fixtures?league={league_id}&season={CURRENT_SEASON}&from={start_str[:10]}&to={end_str[:10]}&timezone=Africa/Accra"
     res = requests.get(url, headers=HEADERS).json()
-
+     params = {
+    	"league": LEAGUES[selected_league_name],
+    	"season": CURRENT_SEASON,
+    	"date": datetime.date.today().strftime('%Y-%m-%d'),
+    	"timezone": "Africa/Accra"  # <-- Tells API-Sports to convert kick-offs natively to your timezone!
+}
     fixtures = []
     if 'response' in res:
         for f in res['response']:
