@@ -8,7 +8,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from datetime import datetime
 
 # ============================================================
 # CONFIGURATION & API SETUP
@@ -22,7 +21,7 @@ HEADERS = {
 }
 
 # Automatically calculates the current year dynamically
-CURRENT_SEASON = datetime.datetime.date.today().year 
+CURRENT_SEASON = datetime.datetime.today().year 
 
 # Supported Leagues Mapping
 LEAGUES = {
