@@ -89,7 +89,7 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
     # API request
     url = f"{API_URL}fixtures?league={league_id}&season={CURRENT_SEASON}&from={start_str[:10]}&to={end_str[:10]}&timezone=Africa/Accra"
     res = requests.get(url, headers=HEADERS).json()
-params = {
+    params = {
     	"league": LEAGUES[selected_league_name],
     	"season": CURRENT_SEASON,
     	"date": datetime.date.today().strftime('%Y-%m-%d'),
