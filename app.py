@@ -1,20 +1,20 @@
 import streamlit as st
 import pandas as pd
+import streamlit as st
+import pandas as pd
 import numpy as np
 import requests
-import time
-from datetime import datetime
+import time  # <-- Safe dynamic year module
 from datetime import datetime, timedelta
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-
 # ============================================================
 # CONFIGURATION & API SETUP
 # ============================================================
-API_KEY = "23c2300b33ab3d891a3c3ffdadd8b13b"  # Replace with your actual api-sports.io key
+API_KEY = "23c2300b33ab3d891a3c3ffdadd8b13b"
 API_URL = "https://v3.football.api-sports.io/"
 
 HEADERS = {
@@ -22,8 +22,8 @@ HEADERS = {
     'x-rapidapi-key': API_KEY
 }
 
-# Automatically calculates the current year dynamically
-CURRENT_SEASON = datetime.datetime.date.today().year 
+# Automatically calculates the current year dynamically using system time
+CURRENT_SEASON = int(time.strftime("%Y")) 
 
 # Supported Leagues Mapping
 LEAGUES = {
@@ -41,6 +41,7 @@ LEAGUES = {
     "🇫🇷 Ligue 1 (France)": 61,
     "🇺🇸 MLS (USA)": 253
 }
+
 # ============================================================
 # DATA FETCHING PIPELINES
 # ============================================================
