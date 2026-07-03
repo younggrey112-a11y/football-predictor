@@ -1,13 +1,15 @@
-import datetime
 import streamlit as st
 import pandas as pd
 import numpy as np
 import requests
+import time
+from datetime import datetime
 from datetime import datetime, timedelta
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+
 
 # ============================================================
 # CONFIGURATION & API SETUP
@@ -21,7 +23,7 @@ HEADERS = {
 }
 
 # Automatically calculates the current year dynamically
-CURRENT_SEASON = datetime.datetime.today().year 
+CURRENT_SEASON = datetime.datetime.date.today().year 
 
 # Supported Leagues Mapping
 LEAGUES = {
@@ -90,12 +92,7 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
     # API request
     url = f"{API_URL}fixtures?league={league_id}&season={CURRENT_SEASON}&from={start_str[:10]}&to={end_str[:10]}&timezone=Africa/Accra"
     res = requests.get(url, headers=HEADERS).json()
-    params = {
-    	"league": LEAGUES[selected_league_name],
-    	"season": CURRENT_SEASON,
-    	"date": datetime.date.today().strftime('%Y-%m-%d'),
-    	"timezone": "Africa/Accra"  # <-- Tells API-Sports to convert kick-offs natively to your timezone!
-}
+
     fixtures = []
     if 'response' in res:
         for f in res['response']:
