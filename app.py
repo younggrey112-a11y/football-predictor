@@ -78,7 +78,6 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
         "timezone": "Africa/Accra"
     }
     
-    # Restructure time windows cleanly using standard API parameters
     if timeframe_option == "Today" or timeframe_option == "Next 3 Hours":
         params["date"] = today_str
     elif timeframe_option == "Tomorrow":
