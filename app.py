@@ -1,8 +1,8 @@
-import datetime
 import streamlit as st
 import pandas as pd
 import numpy as np
 import requests
+import datetime
 from datetime import datetime, timedelta
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
