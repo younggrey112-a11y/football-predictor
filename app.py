@@ -41,16 +41,18 @@ LEAGUES = {
 # ============================================================
 # DATA FETCHING PIPELINES
 # ============================================================
-@st.cache_data(ttl=1800)
+@st.cache_data(ttl=60) # Reduced cache to 60 seconds to force fresh connections
 def fetch_league_table(league_id):
-    """Fetches base standings, positions, form strings, and basic goal averages."""
     url = f"{API_URL}standings?league={league_id}&season={CURRENT_SEASON}"
     res = requests.get(url, headers=HEADERS).json()
+
+    # Catch API errors directly
+    if 'errors' in res and res['errors']:
+        return {"error": res['errors']}
 
     try:
         standings = res['response'][0]['league']['standings'][0]
     except (KeyError, IndexError):
-        # Return fallback dummy values if league table data isn't active/populated yet
         return {
             "Argentina": {"league_position": 1, "recent_5-match_form": "WWWWW", "home_goals_scored_avg": 2.5, "home_goals_conceded_avg": 0.5, "points": 45},
             "Cape Verde": {"league_position": 2, "recent_5-match_form": "WDLWW", "home_goals_scored_avg": 1.5, "home_goals_conceded_avg": 1.0, "points": 32}
@@ -69,12 +71,10 @@ def fetch_league_table(league_id):
         }
     return table_data
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=60)
 def fetch_fixtures_by_timeframe(league_id, timeframe_option):
-    """Fetches upcoming games based on a cleaner flexible timeframe calculation."""
     today_date = datetime.utcnow()
     
-    # We broaden the request range slightly to make sure games matching late time windows don't drop out
     params = {
         "league": league_id,
         "season": CURRENT_SEASON,
@@ -85,6 +85,10 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
 
     res = requests.get(f"{API_URL}fixtures", headers=HEADERS, params=params).json()
     
+    # Catch API errors directly
+    if 'errors' in res and res['errors']:
+        return {"error": res['errors']}
+        
     fixtures = []
     if 'response' in res:
         for f in res['response']:
@@ -92,7 +96,6 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
             target_date_str = today_date.strftime('%Y-%m-%d')
             tomorrow_date_str = (today_date + timedelta(days=1)).strftime('%Y-%m-%d')
             
-            # Match strict user interface selection filters cleanly
             if timeframe_option in ["Today", "Next 3 Hours"] and match_date_str != target_date_str:
                 continue
             elif timeframe_option == "Tomorrow" and match_date_str != tomorrow_date_str:
@@ -141,7 +144,15 @@ with col_left:
     table_stats = fetch_league_table(league_id)
     matches = fetch_fixtures_by_timeframe(league_id, timeframe)
 
-    if matches:
+    # NEW: Safety blocks to display the exact API error to the user
+    if isinstance(matches, dict) and "error" in matches:
+        st.error(f"🚨 *API Connection Blocked!*\n\nThe server responded with: {matches['error']}")
+        st.info("Check your API key limits or subscription status at api-sports.io.")
+        chosen_match = None
+    elif isinstance(table_stats, dict) and "error" in table_stats:
+        st.error(f"🚨 *API Connection Blocked!*\n\nThe server responded with: {table_stats['error']}")
+        chosen_match = None
+    elif matches:
         match_options = [f"{m['home_team']} vs {m['away_team']}" for m in matches]
         selected_match_str = st.selectbox("3. Select Live Fixture:", match_options)
 
@@ -154,7 +165,7 @@ with col_left:
 with col_right:
     st.header("📊 Evaluation & Prediction Analytics")
 
-    if chosen_match and table_stats:
+    if chosen_match and table_stats and not (isinstance(table_stats, dict) and "error" in table_stats):
         home = chosen_match['home_team']
         away = chosen_match['away_team']
 
@@ -170,7 +181,7 @@ with col_right:
             "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.1),
             "home_xg_avg": adv["home_xg_avg"], "away_xg_avg": adv["away_xg_avg"],
             "stats_and_injuries": adv["stats_and_injuries"],
-            "head_to_head_&standings": adv["head_to_head&_standings"],
+            "head_to_head_&_standings": adv["head_to_head_&_standings"],
             "lineups": adv["lineups"], "venue": chosen_match["venue"],
             "Elo_ratings": adv["Elo_ratings"], "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WWWDW"),
             "league_position": table_stats.get(home, {}).get("league_position", 1),
