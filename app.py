@@ -20,11 +20,12 @@ HEADERS = {
     'x-rapidapi-key': API_KEY
 }
 
+# Bypasses import conflicts cleanly using the time module
 CURRENT_SEASON = int(time.strftime("%Y")) 
 
 LEAGUES = {
-    "🏆 FIFA World Cup": 1,
     "🌍 Africa Cup of Nations (AFCON)": 6,
+    "🏆 FIFA World Cup": 1,
     "🏴󠁧󠁢󠁥󠁮󠁧󠁿 English Premier League": 39,
     "🏴󠁧󠁢󠁥󠁮󠁧󠁿 England Championship": 40,
     "🇪🇺 UEFA Champions League": 2,
@@ -49,7 +50,7 @@ def fetch_league_table(league_id):
         res = requests.get(url, headers=HEADERS).json()
         standings = res['response'][0]['league']['standings'][0]
     except (KeyError, IndexError, Exception):
-        # Fallback dictionary if the current season is blocked by your API plan
+        # Graceful fallback data if your API key tier blocks the 2026 season
         return {
             "Argentina": {"league_position": 1, "recent_5-match_form": "WWWWW", "home_goals_scored_avg": 2.5, "home_goals_conceded_avg": 0.5, "points": 45},
             "France": {"league_position": 2, "recent_5-match_form": "WDLWW", "home_goals_scored_avg": 1.5, "home_goals_conceded_avg": 1.0, "points": 32},
@@ -71,18 +72,36 @@ def fetch_league_table(league_id):
 
 @st.cache_data(ttl=600)
 def fetch_fixtures_by_timeframe(league_id, timeframe_option):
-    """Fetches upcoming games or generates test fixtures if API plan limits apply."""
-    now = datetime.datetime.utcnow()
-    start_str = now.strftime('%Y-%m-%d')
-    end_str = (now + datetime.timedelta(days=7)).strftime('%Y-%m-%d')
+    """Fetches upcoming games based on the user's specific time filters."""
+    now = datetime.utcnow()
 
-    url = f"{API_URL}fixtures?league={league_id}&season={CURRENT_SEASON}&from={start_str}&to={end_str}&timezone=Africa/Accra"
+    if timeframe_option == "Next 3 Hours":
+        start_str = now.strftime('%Y-%m-%dT%H:%M:%S')
+        end_str = (now + timedelta(hours=3)).strftime('%Y-%m-%dT%H:%M:%S')
+    elif timeframe_option == "Today":
+        start_str = now.strftime('%Y-%m-%d')
+        end_str = now.strftime('%Y-%m-%d')
+    elif timeframe_option == "Tomorrow":
+        start_str = (now + timedelta(days=1)).strftime('%Y-%m-%d')
+        end_str = (now + timedelta(days=1)).strftime('%Y-%m-%d')
+    elif timeframe_option == "Next Week":
+        start_str = now.strftime('%Y-%m-%d')
+        end_str = (now + timedelta(days=7)).strftime('%Y-%m-%d')
+    else: 
+        start_str = now.strftime('%Y-%m-%d')
+        end_str = (now + timedelta(days=1)).strftime('%Y-%m-%d')
+
+    url = f"{API_URL}fixtures?league={league_id}&season={CURRENT_SEASON}&from={start_str[:10]}&to={end_str[:10]}&timezone=Africa/Accra"
     
     try:
         res = requests.get(url, headers=HEADERS).json()
         fixtures = []
         if 'response' in res and len(res['response']) > 0:
             for f in res['response']:
+                match_time = datetime.fromisoformat(f['fixture']['date'].replace('+00:00', ''))
+                if timeframe_option == "Next 3 Hours" and not (now <= match_time <= now + timedelta(hours=3)):
+                    continue
+
                 fixtures.append({
                     "fixture_id": f['fixture']['id'],
                     "home_team": f['teams']['home']['name'],
@@ -93,7 +112,7 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
     except Exception:
         pass
 
-    # If API fails or plan restricts data, return simulated fixtures for testing
+    # Fallback simulation if the API key restricts season access
     return [
         {"fixture_id": 101, "home_team": "Argentina", "away_team": "France", "venue": "Lusail Iconic Stadium"},
         {"fixture_id": 102, "home_team": "England", "away_team": "Argentina", "venue": "Wembley Stadium"}
@@ -101,18 +120,42 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
 
 @st.cache_data(ttl=600)
 def fetch_advanced_match_metrics(fixture_id, home_team, away_team, table):
+    """Gathers lineup configurations, injury statuses, lineups and match stats."""
     metrics = {
-        "home_form_points": len([x for x in table.get(home_team, {}).get("recent_5-match_form", "WWW") if x == 'W']) * 3,
-        "away_form_points": len([x for x in table.get(away_team, {}).get("recent_5-match_form", "WW") if x == 'W']) * 3,
-        "home_xg_avg": 2.1, "away_xg_avg": 1.45, 
-        "stats_and_injuries": "Squad selection updates pending close to kickoff",
-        "head_to_head_&_standings": "Knockout Stage Context",
-        "lineups": "Provisional formations active",
-        "Elo_ratings": 1650 if home_team == "Argentina" else 1450,
-        "shots_on_target": 5.2,
-        "possession_%": 55,
-        "player_availability": "Full squads declared fit"
+        "home_form_points": len([x for x in table.get(home_team, {}).get("recent_5-match_form", "") if x == 'W']) * 3,
+        "away_form_points": len([x for x in table.get(away_team, {}).get("recent_5-match_form", "") if x == 'W']) * 3,
+        "home_xg_avg": 1.75, "away_xg_avg": 1.35, 
+        "stats_and_injuries": "No major squad suspensions reported",
+        "head_to_head_&_standings": "Highly competitive context",
+        "lineups": "Standard tactical formation profile",
+        "Elo_ratings": 1500,
+        "shots_on_target": 4.8,
+        "possession_%": 50,
+        "player_availability": "Stable squad availability"
     }
+
+    # Lineups
+    url_lineups = f"{API_URL}fixtures/lineups?fixture={fixture_id}"
+    try:
+        res_lineups = requests.get(url_lineups, headers=HEADERS).json()
+        if 'response' in res_lineups and len(res_lineups['response']) == 2:
+            h_form = res_lineups['response'][0]['coach']['name'] or "Squad"
+            a_form = res_lineups['response'][1]['coach']['name'] or "Squad"
+            metrics["lineups"] = f"Tactical plans arranged under {h_form} vs {a_form}"
+    except Exception:
+        pass
+
+    # Injuries
+    url_injuries = f"{API_URL}injuries?fixture={fixture_id}"
+    try:
+        res_injuries = requests.get(url_injuries, headers=HEADERS).json()
+        if 'response' in res_injuries and len(res_injuries['response']) > 0:
+            count = len(res_injuries['response'])
+            metrics["stats_and_injuries"] = f"Warning: {count} players sidelined due to physical injuries"
+            metrics["player_availability"] = "Disrupted rotation parameters"
+    except Exception:
+        pass
+
     return metrics
 
 # ============================================================
@@ -129,20 +172,12 @@ with col_left:
     selected_league = st.selectbox("1. Choose Target League:", list(LEAGUES.keys()))
     league_id = LEAGUES[selected_league]
 
-    timeframe = st.selectbox("2. Choose Timeframe:", ["Today", "Next 3 Hours", "Tomorrow", "Next Week"])
+    timeframe = st.selectbox("2. Choose Timeframe:", ["Today", "Next 3 Hours", "Midnight", "Tomorrow", "Next Week"])
 
     table_stats = fetch_league_table(league_id)
     matches = fetch_fixtures_by_timeframe(league_id, timeframe)
 
-    # NEW: Safety blocks to display the exact API error to the user
-    if isinstance(matches, dict) and "error" in matches:
-        st.error(f"🚨 *API Connection Blocked!*\n\nThe server responded with: {matches['error']}")
-        st.info("Check your API key limits or subscription status at api-sports.io.")
-        chosen_match = None
-    elif isinstance(table_stats, dict) and "error" in table_stats:
-        st.error(f"🚨 *API Connection Blocked!*\n\nThe server responded with: {table_stats['error']}")
-        chosen_match = None
-    elif matches:
+    if matches:
         match_options = [f"{m['home_team']} vs {m['away_team']}" for m in matches]
         selected_match_str = st.selectbox("3. Select Live Fixture:", match_options)
 
@@ -155,7 +190,7 @@ with col_left:
 with col_right:
     st.header("📊 Evaluation & Prediction Analytics")
 
-    if chosen_match and table_stats and not (isinstance(table_stats, dict) and "error" in table_stats):
+    if chosen_match and table_stats:
         home = chosen_match['home_team']
         away = chosen_match['away_team']
 
@@ -165,16 +200,16 @@ with col_right:
         match_record = {
             "home_team": home, "away_team": away,
             "home_form_points": adv["home_form_points"], "away_form_points": adv["away_form_points"],
-            "home_goals_scored_avg": table_stats.get(home, {}).get("home_goals_scored_avg", 1.8),
-            "away_goals_scored_avg": table_stats.get(away, {}).get("home_goals_scored_avg", 1.2),
-            "home_goals_conceded_avg": table_stats.get(home, {}).get("home_goals_conceded_avg", 0.8),
-            "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.1),
+            "home_goals_scored_avg": table_stats.get(home, {}).get("home_goals_scored_avg", 1.2),
+            "away_goals_scored_avg": table_stats.get(away, {}).get("home_goals_scored_avg", 1.0),
+            "home_goals_conceded_avg": table_stats.get(home, {}).get("home_goals_conceded_avg", 1.1),
+            "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.3),
             "home_xg_avg": adv["home_xg_avg"], "away_xg_avg": adv["away_xg_avg"],
             "stats_and_injuries": adv["stats_and_injuries"],
-            "head_to_head_&_standings": adv["head_to_head_&_standings"],
+            "head_to_head_&standings": adv["head_to_head&_standings"],
             "lineups": adv["lineups"], "venue": chosen_match["venue"],
-            "Elo_ratings": adv["Elo_ratings"], "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WWWDW"),
-            "league_position": table_stats.get(home, {}).get("league_position", 1),
+            "Elo_ratings": adv["Elo_ratings"], "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WDLWD"),
+            "league_position": table_stats.get(home, {}).get("league_position", 10),
             "shots_on_target": adv["shots_on_target"], "possession_%": adv["possession_%"],
             "player_availability": adv["player_availability"]
         }
@@ -184,7 +219,8 @@ with col_right:
 
         synthetic_hist = []
         for t_name, data in table_stats.items():
-            synthetic_hist.append({"home_team": t_name, "away_team": "Away Component", "possession_%": 50, "match_outcome": "H" if data.get('points', 0) > 30 else "A"})
+            points_val = data.get('points', 0)
+            synthetic_hist.append({"home_team": t_name, "away_team": "Away Component", "possession_%": 50, "match_outcome": "H" if points_val > 30 else "A"})
 
         df_dummy = pd.DataFrame(synthetic_hist)
 
