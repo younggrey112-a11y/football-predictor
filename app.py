@@ -50,7 +50,7 @@ def fetch_league_table(league_id):
         res = requests.get(url, headers=HEADERS).json()
         standings = res['response'][0]['league']['standings'][0]
     except (KeyError, IndexError, Exception):
-        # Graceful fallback data if your API key tier blocks the 2026 season
+        # Graceful fallback data if your API key tier blocks the current season
         return {
             "Argentina": {"league_position": 1, "recent_5-match_form": "WWWWW", "home_goals_scored_avg": 2.5, "home_goals_conceded_avg": 0.5, "points": 45},
             "France": {"league_position": 2, "recent_5-match_form": "WDLWW", "home_goals_scored_avg": 1.5, "home_goals_conceded_avg": 1.0, "points": 32},
@@ -114,8 +114,8 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
 
     # Fallback simulation if the API key restricts season access
     return [
-        {"fixture_id": 101, "home_team": "Argentina", "away_team": "France", "venue": "Lusail Iconic Stadium"},
-        {"fixture_id": 102, "home_team": "England", "away_team": "Argentina", "venue": "Wembley Stadium"}
+        {"fixture_id": 101, "home_team": "England", "away_team": "Argentina", "venue": "Wembley Stadium"},
+        {"fixture_id": 102, "home_team": "Argentina", "away_team": "France", "venue": "Lusail Iconic Stadium"}
     ]
 
 @st.cache_data(ttl=600)
