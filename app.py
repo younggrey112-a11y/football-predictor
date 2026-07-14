@@ -225,8 +225,8 @@ match_record = {
     "player_availability": adv.get("player_availability", "Stable")
 }
 
-    st.subheader("📋 Captured Live Match Variables")
-    st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
+st.subheader("📋 Captured Live Match Variables")
+st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
 
         synthetic_hist = []
         for t_name, data in table_stats.items():
