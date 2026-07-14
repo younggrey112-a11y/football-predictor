@@ -228,10 +228,10 @@ match_record = {
 st.subheader("📋 Captured Live Match Variables")
 st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
 
-    synthetic_hist = []
-        for t_name, data in table_stats.items():
-            points_val = data.get('points', 0)
-            synthetic_hist.append({"home_team": t_name, "away_team": "Away Component", "possession_%": 50, "match_outcome": "H" if points_val > 30 else "A"})
+synthetic_hist = []
+    for t_name, data in table_stats.items():
+        points_val = data.get('points', 0)
+        synthetic_hist.append({"home_team": t_name, "away_team": "Away Component", "possession_%": 50, "match_outcome": "H" if points_val > 30 else "A"})
 
         df_dummy = pd.DataFrame(synthetic_hist)
 
