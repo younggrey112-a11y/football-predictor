@@ -1,4 +1,4 @@
-st.cache_data.clear()
+st.cache_data.clear()  # Optional: remove after first run
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -21,7 +21,6 @@ HEADERS = {
     'x-rapidapi-key': API_KEY
 }
 
-# Bypasses import conflicts cleanly using the time module
 CURRENT_SEASON = int(time.strftime("%Y")) 
 
 LEAGUES = {
@@ -127,17 +126,14 @@ def fetch_advanced_match_metrics(fixture_id, home_team, away_team, table):
         "away_form_points": len([x for x in table.get(away_team, {}).get("recent_5-match_form", "") if x == 'W']) * 3,
         "home_xg_avg": 1.75, "away_xg_avg": 1.35, 
         "stats_and_injuries": "No major squad suspensions reported",
-        "head_to_head_&_standings": "Highly competitive context",
+        "head_to_head_&_standings": "Highly competitive context",  # key includes underscore after &
         "lineups": "Standard tactical formation profile",
         "Elo_ratings": 1500,
         "shots_on_target": 4.8,
         "possession_%": 50,
         "player_availability": "Stable squad availability"
     }
-    adv = fetch_advanced_match_metrics(...)
-    if adv is None:
-        st.error("Could not retrieve advanced metrics; using defaults.")
-        adv = {}  # or provide a full default dict
+    # Removed erroneous recursive call: adv = fetch_advanced_match_metrics(...)
 
     # Lineups
     url_lineups = f"{API_URL}fixtures/lineups?fixture={fixture_id}"
@@ -202,36 +198,38 @@ with col_right:
         with st.spinner("AI is calculating tracking metrics..."):
             adv = fetch_advanced_match_metrics(chosen_match['fixture_id'], home, away, table_stats)
 
-match_record = {
-    "home_team": home,
-    "away_team": away,
-    "home_form_points": adv.get("home_form_points", 0),
-    "away_form_points": adv.get("away_form_points", 0),
-    "home_goals_scored_avg": table_stats.get(home, {}).get("home_goals_scored_avg", 1.2),
-    "away_goals_scored_avg": table_stats.get(away, {}).get("home_goals_scored_avg", 1.0),
-    "home_goals_conceded_avg": table_stats.get(home, {}).get("home_goals_conceded_avg", 1.1),
-    "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.3),
-    "home_xg_avg": adv.get("home_xg_avg", 1.75),
-    "away_xg_avg": adv.get("away_xg_avg", 1.35),
-    "stats_and_injuries": adv.get("stats_and_injuries", "No injury data"),
-    "head_to_head_&standings": adv.get("head_to_head_&standings", "No head‑to‑head data"),
-    "lineups": adv.get("lineups", "Lineups not available"),
-    "venue": chosen_match["venue"],
-    "Elo_ratings": adv.get("Elo_ratings", 1500),
-    "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WDLWD"),
-    "league_position": table_stats.get(home, {}).get("league_position", 10),
-    "shots_on_target": adv.get("shots_on_target", 4.8),
-    "possession_%": adv.get("possession_%", 50),
-    "player_availability": adv.get("player_availability", "Stable")
-}
+        # All code that uses home, away, adv, table_stats must be indented inside this if block
+        match_record = {
+            "home_team": home,
+            "away_team": away,
+            "home_form_points": adv.get("home_form_points", 0),
+            "away_form_points": adv.get("away_form_points", 0),
+            "home_goals_scored_avg": table_stats.get(home, {}).get("home_goals_scored_avg", 1.2),
+            "away_goals_scored_avg": table_stats.get(away, {}).get("home_goals_scored_avg", 1.0),
+            "home_goals_conceded_avg": table_stats.get(home, {}).get("home_goals_conceded_avg", 1.1),
+            "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.3),
+            "home_xg_avg": adv.get("home_xg_avg", 1.75),
+            "away_xg_avg": adv.get("away_xg_avg", 1.35),
+            "stats_and_injuries": adv.get("stats_and_injuries", "No injury data"),
+            # Fixed key to match the one defined in metrics (with underscore after &)
+            "head_to_head_&standings": adv.get("head_to_head&_standings", "No head‑to‑head data"),
+            "lineups": adv.get("lineups", "Lineups not available"),
+            "venue": chosen_match["venue"],
+            "Elo_ratings": adv.get("Elo_ratings", 1500),
+            "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WDLWD"),
+            "league_position": table_stats.get(home, {}).get("league_position", 10),
+            "shots_on_target": adv.get("shots_on_target", 4.8),
+            "possession_%": adv.get("possession_%", 50),
+            "player_availability": adv.get("player_availability", "Stable")
+        }
 
-st.subheader("📋 Captured Live Match Variables")
-st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
+        st.subheader("📋 Captured Live Match Variables")
+        st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
 
-synthetic_hist = []
-for t_name, data in table_stats.items():
-    points_val = data.get('points', 0)
-    synthetic_hist.append({"home_team": t_name, "away_team": "Away Component", "possession_%": 50, "match_outcome": "H" if points_val > 30 else "A"})
+        synthetic_hist = []
+        for t_name, data in table_stats.items():
+            points_val = data.get('points', 0)
+            synthetic_hist.append({"home_team": t_name, "away_team": "Away Component", "possession_%": 50, "match_outcome": "H" if points_val > 30 else "A"})
 
         df_dummy = pd.DataFrame(synthetic_hist)
 
