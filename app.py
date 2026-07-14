@@ -135,9 +135,9 @@ def fetch_advanced_match_metrics(fixture_id, home_team, away_team, table):
         "player_availability": "Stable squad availability"
     }
     adv = fetch_advanced_match_metrics(...)
-        if adv is None:
-            st.error("Could not retrieve advanced metrics; using defaults.")
-            adv = {}  # or provide a full default dict
+    if adv is None:
+        st.error("Could not retrieve advanced metrics; using defaults.")
+        adv = {}  # or provide a full default dict
 
     # Lineups
     url_lineups = f"{API_URL}fixtures/lineups?fixture={fixture_id}"
@@ -225,7 +225,7 @@ match_record = {
     "player_availability": adv.get("player_availability", "Stable")
 }
 
-        st.subheader("📋 Captured Live Match Variables")
+    st.subheader("📋 Captured Live Match Variables")
         st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
 
         synthetic_hist = []
