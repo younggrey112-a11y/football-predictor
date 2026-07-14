@@ -198,22 +198,28 @@ with col_right:
         with st.spinner("AI is calculating tracking metrics..."):
             adv = fetch_advanced_match_metrics(chosen_match['fixture_id'], home, away, table_stats)
 
-        match_record = {
-            "home_team": home, "away_team": away,
-            "home_form_points": adv["home_form_points"], "away_form_points": adv["away_form_points"],
-            "home_goals_scored_avg": table_stats.get(home, {}).get("home_goals_scored_avg", 1.2),
-            "away_goals_scored_avg": table_stats.get(away, {}).get("home_goals_scored_avg", 1.0),
-            "home_goals_conceded_avg": table_stats.get(home, {}).get("home_goals_conceded_avg", 1.1),
-            "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.3),
-            "home_xg_avg": adv["home_xg_avg"], "away_xg_avg": adv["away_xg_avg"],
-            "stats_and_injuries": adv["stats_and_injuries"],
-            "head_to_head_&standings": adv["head_to_head&_standings"],
-            "lineups": adv["lineups"], "venue": chosen_match["venue"],
-            "Elo_ratings": adv["Elo_ratings"], "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WDLWD"),
-            "league_position": table_stats.get(home, {}).get("league_position", 10),
-            "shots_on_target": adv["shots_on_target"], "possession_%": adv["possession_%"],
-            "player_availability": adv["player_availability"]
-        }
+match_record = {
+    "home_team": home,
+    "away_team": away,
+    "home_form_points": adv.get("home_form_points", 0),
+    "away_form_points": adv.get("away_form_points", 0),
+    "home_goals_scored_avg": table_stats.get(home, {}).get("home_goals_scored_avg", 1.2),
+    "away_goals_scored_avg": table_stats.get(away, {}).get("home_goals_scored_avg", 1.0),
+    "home_goals_conceded_avg": table_stats.get(home, {}).get("home_goals_conceded_avg", 1.1),
+    "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.3),
+    "home_xg_avg": adv.get("home_xg_avg", 1.75),
+    "away_xg_avg": adv.get("away_xg_avg", 1.35),
+    "stats_and_injuries": adv.get("stats_and_injuries", "No injury data"),
+    "head_to_head_&standings": adv.get("head_to_head_&standings", "No head‑to‑head data"),
+    "lineups": adv.get("lineups", "Lineups not available"),
+    "venue": chosen_match["venue"],
+    "Elo_ratings": adv.get("Elo_ratings", 1500),
+    "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WDLWD"),
+    "league_position": table_stats.get(home, {}).get("league_position", 10),
+    "shots_on_target": adv.get("shots_on_target", 4.8),
+    "possession_%": adv.get("possession_%", 50),
+    "player_availability": adv.get("player_availability", "Stable")
+}
 
         st.subheader("📋 Captured Live Match Variables")
         st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
