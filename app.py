@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, LabelEncoder  # or whatever you need
 
 # ============================================================
 # CONFIGURATION & API SETUP
