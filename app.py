@@ -484,3 +484,4 @@ with col_right:
             c1, c2 = st.columns(2)
             c1.metric(f"🏠 {home} Advantage Percentage", f"{probs[1]*100:.2f}%")
             c2.metric(f"✈️ {away} Advantage Percentage", f"{probs[0]*100:.2f}%")
+            c2.metric(f"✈️ {away} Advantage Percentage", f"{probs[0]*100:.2f}%")
