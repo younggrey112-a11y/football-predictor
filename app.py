@@ -1,12 +1,4 @@
-st.cache_data.clear()  # Optional: remove after first run
 import streamlit as st
-import pandas as pd
-import numpy as np
-import requests
-import time
-from datetime import datetime, timedelta
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprimport streamlit as st
 import pandas as pd
 import numpy as np
 import requests
