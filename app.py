@@ -49,7 +49,7 @@ def fetch_league_table(league_id):
         res = requests.get(url, headers=HEADERS).json()
         standings = res['response'][0]['league']['standings'][0]
     except (KeyError, IndexError, Exception):
-        # Clean simulation data if API limits apply or the key blocks the current season
+        # Fallback simulation database
         return {
             "Argentina": {"league_position": 1, "recent_5-match_form": "WWWWW", "home_goals_scored_avg": 2.5, "home_goals_conceded_avg": 0.5, "points": 45},
             "France": {"league_position": 2, "recent_5-match_form": "WDLWW", "home_goals_scored_avg": 1.5, "home_goals_conceded_avg": 1.0, "points": 32},
@@ -111,7 +111,7 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
     except Exception:
         pass
 
-    # Fallback simulation if the API key restricts current season access
+    # Fallback simulation matches
     return [
         {"fixture_id": 101, "home_team": "England", "away_team": "Argentina", "venue": "Wembley Stadium"},
         {"fixture_id": 102, "home_team": "Argentina", "away_team": "France", "venue": "Lusail Iconic Stadium"}
@@ -119,7 +119,7 @@ def fetch_fixtures_by_timeframe(league_id, timeframe_option):
 
 @st.cache_data(ttl=600)
 def fetch_advanced_match_metrics(fixture_id, home_team, away_team, table):
-    """Gathers lineup configurations, injury statuses, lineups and match stats."""
+    """Gathers lineup configurations, injury statuses, lineups and match stats in background."""
     metrics = {
         "home_form_points": len([x for x in table.get(home_team, {}).get("recent_5-match_form", "") if x == 'W']) * 3,
         "away_form_points": len([x for x in table.get(away_team, {}).get("recent_5-match_form", "") if x == 'W']) * 3,
@@ -177,45 +177,18 @@ with col_left:
     matches = fetch_fixtures_by_timeframe(league_id, timeframe)
 
     if matches:
-        match_options = [f"{m['home_team']} vs {m['away_team']}" for m in matches]
-        selected_match_str = st.selectbox("3. Select Live Fixture:", match_options)
-
-        match_idx = match_options.index(selected_match_str)
-        chosen_match = matches[match_idx]
+        st.success(f"✅ Found {len(matches)} scheduled match(es) in this window.")
+        # Visual list of matches to be processed
+        for idx, m in enumerate(matches, 1):
+            st.markdown(f"*{idx}.* {m['home_team']} 🆚 {m['away_team']}")
     else:
         st.warning("⚠️ No matches located within this selected window.")
-        chosen_match = None
 
 with col_right:
     st.header("📊 Evaluation & Prediction Analytics")
 
-    if chosen_match and table_stats:
-        home = chosen_match['home_team']
-        away = chosen_match['away_team']
-
-        with st.spinner("AI is calculating tracking metrics..."):
-            adv = fetch_advanced_match_metrics(chosen_match['fixture_id'], home, away, table_stats)
-
-        match_record = {
-            "home_team": home, "away_team": away,
-            "home_form_points": adv["home_form_points"], "away_form_points": adv["away_form_points"],
-            "home_goals_scored_avg": table_stats.get(home, {}).get("home_goals_scored_avg", 1.2),
-            "away_goals_scored_avg": table_stats.get(away, {}).get("home_goals_scored_avg", 1.0),
-            "home_goals_conceded_avg": table_stats.get(home, {}).get("home_goals_conceded_avg", 1.1),
-            "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.3),
-            "home_xg_avg": adv["home_xg_avg"], "away_xg_avg": adv["away_xg_avg"],
-            "stats_and_injuries": adv["stats_and_injuries"],
-            "head_to_head_&_standings": adv["head_to_head_&_standings"],
-            "lineups": adv["lineups"], "venue": chosen_match["venue"],
-            "Elo_ratings": adv["Elo_ratings"], "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WDLWD"),
-            "league_position": table_stats.get(home, {}).get("league_position", 10),
-            "shots_on_target": adv["shots_on_target"], "possession_%": adv["possession_%"],
-            "player_availability": adv["player_availability"]
-        }
-
-        st.subheader("📋 Captured Live Match Variables")
-        st.write(pd.DataFrame([match_record]).T.rename(columns={0: "Captured Value"}))
-
+    if matches and table_stats:
+        # Build synthetic history model
         synthetic_hist = []
         for t_name, data in table_stats.items():
             points_val = data.get('points', 0)
@@ -225,14 +198,34 @@ with col_right:
 
         ct = ColumnTransformer(transformers=[("cat", OneHotEncoder(handle_unknown='ignore'), ["home_team", "away_team"])], remainder='passthrough')
         clf = Pipeline(steps=[('preprocessor', ct), ('classifier', RandomForestClassifier(random_state=42))])
-
         clf.fit(df_dummy[["home_team", "away_team", "possession_%"]], df_dummy["match_outcome"])
 
-        if st.button("🚀 Calculate AI Probabilities"):
-            input_eval = pd.DataFrame([{"home_team": home, "away_team": away, "possession_%": adv["possession_%"]}])
-            probs = clf.predict_proba(input_eval)[0]
-
-            st.success("### 📊 Calculated Percentages:")
-            c1, c2 = st.columns(2)
-            c1.metric(f"🏠 {home} Advantage Percentage", f"{probs[1]*100:.2f}%")
-            c2.metric(f"✈️ {away} Advantage Percentage", f"{probs[0]*100:.2f}%")
+        if st.button("🚀 Calculate AI Probabilities for All Matches"):
+            predictions_list = []
+            
+            with st.spinner("Processing match factors & calculating probabilities..."):
+                for m in matches:
+                    home = m['home_team']
+                    away = m['away_team']
+                    
+                    # Fetching metrics silently in the background
+                    adv = fetch_advanced_match_metrics(m['fixture_id'], home, away, table_stats)
+                    
+                    # Process prediction
+                    input_eval = pd.DataFrame([{"home_team": home, "away_team": away, "possession_%": adv["possession_%"]}])
+                    probs = clf.predict_proba(input_eval)[0]
+                    
+                    predictions_list.append({
+                        "Matchup": f"🏠 {home} vs ✈️ {away}",
+                        f"🏠 {home} Win %": f"{probs[1]*100:.2f}%",
+                        f"✈️ {away} Win %": f"{probs[0]*100:.2f}%",
+                        "Venue": m["venue"]
+                    })
+            
+            # Display results in a highly readable, elegant grid
+            st.success("### 🏆 Prediction Board")
+            results_df = pd.DataFrame(predictions_list)
+            st.dataframe(results_df, use_container_width=True, hide_index=True)
+            
+    else:
+        st.info("Please select a league and timeframe with active matches to calculate predictions.")
