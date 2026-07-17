@@ -5,10 +5,9 @@ import requests
 import time
 from datetime import datetime, timedelta
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import StandardScaler, LabelEncoder  # or whatever you need
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, LabelEncoder  # or whatever you need
 
 # ============================================================
 # CONFIGURATION & API SETUP
