@@ -205,7 +205,7 @@ with col_right:
             "away_goals_conceded_avg": table_stats.get(away, {}).get("home_goals_conceded_avg", 1.3),
             "home_xg_avg": adv["home_xg_avg"], "away_xg_avg": adv["away_xg_avg"],
             "stats_and_injuries": adv["stats_and_injuries"],
-            "head_to_head_&standings": adv["head_to_head&_standings"],
+            "head_to_head_&_standings": adv["head_to_head_&_standings"],
             "lineups": adv["lineups"], "venue": chosen_match["venue"],
             "Elo_ratings": adv["Elo_ratings"], "recent_5-match_form": table_stats.get(home, {}).get("recent_5-match_form", "WDLWD"),
             "league_position": table_stats.get(home, {}).get("league_position", 10),
